@@ -149,25 +149,11 @@
             <h2>特色文章</h2>
             <h3>如何学习编程</h3>
             <p>学习编程可能会让人感到有些挑战，但通过正确的方法和坚持不懈的努力，任何人都可以掌握它。在这篇文章中，我将分享一些我在学习编程过程中总结出的有效方法和技巧。</p>
-            <a href="#" class="btn">阅读全文</a>
+            <a href="article.html?id=1" class="btn">阅读全文</a>
         </div>
 
-        <div class="posts">
-            <div class="post">
-                <h3>前端开发的最佳实践</h3>
-                <p>前端开发是现代Web开发中至关重要的一部分。本文将介绍一些前端开发的最佳实践，帮助你提高代码质量和开发效率。</p>
-                <a href="#" class="btn">阅读全文</a>
-            </div>
-            <div class="post">
-                <h3>如何选择合适的技术栈</h3>
-                <p>选择合适的技术栈对于项目的成功至关重要。本文将讨论一些关键因素，帮助你在众多技术选项中做出明智的选择。</p>
-                <a href="#" class="btn">阅读全文</a>
-            </div>
-            <div class="post">
-                <h3>提高代码可读性的技巧</h3>
-                <p>编写可读性高的代码对于团队协作和项目维护非常重要。本文将分享一些提高代码可读性的实用技巧。</p>
-                <a href="#" class="btn">阅读全文</a>
-            </div>
+        <div class="posts" id="posts-list">
+            <!-- 文章列表将通过JavaScript动态加载 -->
         </div>
     </section>
 
@@ -176,5 +162,24 @@
             <p>&copy; 2023 我的博客. 保留所有权利.</p>
         </div>
     </footer>
+
+    <script>
+        fetch('articles.json')
+            .then(response => response.json())
+            .then(articles => {
+                const postsList = document.getElementById('posts-list');
+                articles.forEach(article => {
+                    const postElement = document.createElement('div');
+                    postElement.className = 'post';
+                    postElement.innerHTML = `
+                        <h3>${article.title}</h3>
+                        <p>${article.content}</p>
+                        <a href="article.html?id=${article.id}" class="btn">阅读全文</a>
+                    `;
+                    postsList.appendChild(postElement);
+                });
+            })
+            .catch(error => console.error('Error loading the articles:', error));
+    </script>
 </body>
 </html>
