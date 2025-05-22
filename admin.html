@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+
+        header {
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 15px 0;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-left: 20px;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #333;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #007bff;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .articles-list {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .article-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .article-item:last-child {
+            border-bottom: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-group textarea {
+            height: 150px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            background-color: #333;
+            color: #fff;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">后台管理</div>
+                <ul class="nav-links">
+                    <li><a href="index.html">返回首页</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="container">
+        <h1>文章管理</h1>
+        <button id="add-article" class="btn">添加文章</button>
+        <div class="articles-list" id="articles-list">
+            <!-- 文章列表将通过JavaScript动态加载 -->
+        </div>
+
+        <div id="article-form" style="display: none;">
+            <h2 id="form-title">添加文章</h2>
+            <form id="article-edit-form">
+                <div class="form-group">
+                    <label for="title">标题</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="content">内容</label>
+                    <textarea id="content" name="content" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="date">日期</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                <button type="submit" class="btn">保存</button>
+                <button type="button" id="cancel-edit" class="btn btn-danger">取消</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 我的博客. 保留所有权利.</p>
+        </div>
+    </footer>
+
+    <script>
+        let articles = [];
+        let editingArticleId = null;
+
+        // 加载文章数据
+        function loadArticles() {
+            fetch('articles.json')
+                .then(response => response.json())
+                .then(data => {
+                    articles = data;
+                    renderArticlesList();
+                })
+                .catch(error => console.error('Error loading the articles:', error));
+        }
+
+        // 渲染文章列表
+        function renderArticlesList() {
+            const articlesList = document.getElementById('articles-list');
+            articlesList.innerHTML = '';
+
+            articles.forEach(article => {
+                const articleItem = document.createElement('div');
+                articleItem.className = 'article-item';
+                articleItem.innerHTML = `
+                    <div>
+                        <h3>${article.title}</h3>
+                        <p>${article.content.substring(0, 100)}...</p>
+                    </div>
+                    <div>
+                        <button onclick="editArticle(${article.id})" class="btn">编辑</button>
+                        <button onclick="deleteArticle(${article.id})" class="btn btn-danger">删除</button>
+                    </div>
+                `;
+                articlesList.appendChild(articleItem);
+            });
+        }
+
+        // 添加文章
+        function addArticle() {
+            document.getElementById('form-title').textContent = '添加文章';
+            document.getElementById('article-form').style.display = 'block';
+            document.getElementById('article-edit-form').reset();
+            editingArticleId = null;
+        }
+
+        // 编辑文章
+        function editArticle(id) {
+            const article = articles.find(a => a.id === id);
+            if (article) {
+                document.getElementById('form-title').textContent = '编辑文章';
+                document.getElementById('title').value = article.title;
+                document.getElementById('content').value = article.content;
+                document.getElementById('date').value = article.date;
+                document.getElementById('article-form').style.display = 'block';
+                editingArticleId = id;
+            }
+        }
+
+        // 删除文章
+        function deleteArticle(id) {
+            if (confirm('确定要删除这篇文章吗？')) {
+                articles = articles.filter(a => a.id !== id);
+                saveArticles();
+                renderArticlesList();
+            }
+        }
+
+        // 保存文章数据
+        function saveArticles() {
+            fetch('articles.json', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(articles, null, 2),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        // 初始化事件监听器
+        document.getElementById('add-article').addEventListener('click', addArticle);
+        document.getElementById('cancel-edit').addEventListener('click', () => {
+            document.getElementById('article-form').style.display = 'none';
+        });
+
+        document.getElementById('article-edit-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const date = document.getElementById('date').value;
+
+            if (editingArticleId !== null) {
+                const article = articles.find(a => a.id === editingArticleId);
+                if (article) {
+                    article.title = title;
+                    article.content = content;
+                    article.date = date;
+                }
+            } else {
+                const newId = articles.length > 0 ? Math.max(...articles.map(a => a.id)) + 1 : 1;
+                articles.push({ id: newId, title, content, date });
+            }
+
+            saveArticles();
+            renderArticlesList();
+            document.getElementById('article-form').style.display = 'none';
+        });
+
+        // 初始化加载文章
+        loadArticles();
+    </script>
+</body>
+</html>
