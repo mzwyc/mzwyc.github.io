@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>完整3D赛车游戏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #hud {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .speedometer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            color: #00ff00;
+            font-family: 'Arial Black';
+            font-size: 24px;
+        }
+        .nitro-bar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .nitro-fill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ffff, #0066ff);
+            transition: transform 0.3s ease;
+            transform-origin: left center;
+        }
+        .control {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            touch-action: none;
+            z-index: 100;
+            opacity: 0.8;
+        }
+        #leftZone { bottom: 30px; left: 20px; }
+        #rightZone { bottom: 30px; right: 20px; }
+        #driftBtn { 
+            width: 60px;
+            height: 60px;
+            background: rgba(255,0,0,0.5);
+            right: 120px;
+            bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <div class="speedometer">SPEED: <span id="speed">0</span> MPH</div>
+        <div class="nitro-bar">
+            <div class="nitro-fill" id="nitroFill"></div>
+        </div>
+    </div>
+    
+    <div class="control" id="leftZone"></div>
+    <div class="control" id="rightZone"></div>
+    <div class="control" id="driftBtn"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script>
+        // 游戏配置
+        const CONFIG = {
+            car: {
+                maxSpeed: 1.8,
+                acceleration: 0.25,
+                deceleration: 0.98,
+                steering: 0.035,
+                driftFactor: 2.0,
+                nitroBoost: 2.5
+            },
+            nitro: {
+                capacity: 100,
+                consumption:5,
+                recharge: 5
+            }
+        };
+
+        let scene, camera, renderer, car;
+        let moveSpeed = 0;
+        let steering = 0;
+        let isDrifting = false;
+        let nitro = 100;
+        let smokeParticles = [];
+        let frameCount = 0;
+
+        // 初始化游戏
+        function init() {
+            setupScene();
+            createCar();
+            createTrack();
+            setupLights();
+            setupCamera();
+            setupTouchControls();
+            setupParticles();
+            setupAudio();
+            animate();
+        }
+
+        function setupScene() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+        }
+
+        function createCar() {
+            const carGroup = new THREE.Group();
+            
+            // 车身
+            const bodyGeometry = new THREE.BoxGeometry(2, 1.2, 4);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFF4500,
+                metalness: 0.3,
+                roughness: 0.5
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+
+            // 车轮
+            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16);
+            const wheelMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x333333,
+                metalness: 0.5
+            });
+
+            const wheelPositions = [
+                [1, -0.5, 1.5], [1, -0.5, -1.5],
+                [-1, -0.5, 1.5], [-1, -0.5, -1.5]
+            ];
+
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                wheel.rotation.z = Math.PI/2;
+                wheel.position.set(...pos);
+                wheel.castShadow = true;
+                carGroup.add(wheel);
+            });
+
+            carGroup.add(body);
+            scene.add(carGroup);
+            car = carGroup;
+            car.position.set(0, 1, 0);
+        }
+
+        function createTrack() {
+            const textureLoader = new THREE.TextureLoader();
+            
+            // 赛道纹理
+            const trackTexture = textureLoader.load('https://threejsfundamentals.org/threejs/resources/images/checker.png');
+            trackTexture.wrapS = THREE.RepeatWrapping;
+            trackTexture.wrapT = THREE.RepeatWrapping;
+            trackTexture.repeat.set(40, 1000);
+
+            const track = new THREE.Mesh(
+                new THREE.PlaneGeometry(40, 1000),
+                new THREE.MeshStandardMaterial({ 
+                    map: trackTexture,
+                    side: THREE.DoubleSide
+                })
+            );
+            track.rotation.x = Math.PI/2;
+            track.receiveShadow = true;
+            scene.add(track);
+
+            // 围栏
+            const wallTexture = textureLoader.load('https://threejsfundamentals.org/threejs/resources/images/wall.jpg');
+            wallTexture.wrapS = THREE.RepeatWrapping;
+            wallTexture.wrapT = THREE.RepeatWrapping;
+
+            const createWall = (x) => {
+                const wall = new THREE.Mesh(
+                    new THREE.BoxGeometry(1, 3, 1000),
+                    new THREE.MeshStandardMaterial({ 
+                        map: wallTexture,
+                        metalness: 0.2
+                    })
+                );
+                wall.position.set(x, 1.5, 0);
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                scene.add(wall);
+            };
+            createWall(-20);
+            createWall(20);
+        }
+
+        function setupLights() {
+            // 主光源
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+            mainLight.position.set(0, 10, 0);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            scene.add(mainLight);
+
+            // 环境光
+            scene.add(new THREE.AmbientLight(0x404040, 0.5));
+        }
+
+        function setupCamera() {
+            camera.position.set(0, 5, -10);
+            camera.lookAt(car.position);
+        }
+
+        function setupTouchControls() {
+            const controlParams = {
+                leftActive: false,
+                rightActive: false,
+                driftActive: false
+            };
+
+            const createHandler = (zone, value) => (e) => {
+                e.preventDefault();
+                controlParams[zone] = value;
+                updateControls();
+            };
+
+            // 左侧转向控制
+            document.getElementById('leftZone').addEventListener('touchstart', createHandler('leftActive', true));
+            document.getElementById('leftZone').addEventListener('touchend', createHandler('leftActive', false));
+            document.getElementById('leftZone').addEventListener('touchcancel', createHandler('leftActive', false));
+
+            // 右侧加速控制
+            document.getElementById('rightZone').addEventListener('touchstart', createHandler('rightActive', true));
+            document.getElementById('rightZone').addEventListener('touchend', createHandler('rightActive', false));
+            document.getElementById('rightZone').addEventListener('touchcancel', createHandler('rightActive', false));
+
+            // 漂移控制
+            const driftBtn = document.getElementById('driftBtn');
+            driftBtn.addEventListener('touchstart', e => {
+                e.preventDefault();
+                controlParams.driftActive = true;
+            });
+            driftBtn.addEventListener('touchend', e => {
+                e.preventDefault();
+                controlParams.driftActive = false;
+            });
+
+            function updateControls() {
+                steering = controlParams.leftActive ? CONFIG.car.steering : 0;
+                moveSpeed = controlParams.rightActive ? 
+                    Math.min(moveSpeed + CONFIG.car.acceleration, CONFIG.car.maxSpeed) : 
+                    moveSpeed * CONFIG.car.deceleration;
+                
+                isDrifting = controlParams.driftActive && moveSpeed > 0.5;
+            }
+        }
+
+        function setupParticles() {
+            const particleCount = 200;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+
+            for(let i = 0; i < particleCount * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 10;
+            }
+
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 0.2,
+                color: 0x888888,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
+            });
+
+            smokeParticles = new THREE.Points(particles, particleMaterial);
+            scene.add(smokeParticles);
+        }
+
+        function updateParticles() {
+            if(isDrifting && moveSpeed > 0.5) {
+                const positions = smokeParticles.geometry.attributes.position.array;
+                for(let i = 0; i < positions.length; i += 3) {
+                    positions[i] = (Math.random() - 0.5) * 4;
+                    positions[i+1] = Math.random() * -0.5;
+                    positions[i+2] = (Math.random() - 0.5) * 4;
+                }
+                smokeParticles.geometry.attributes.position.needsUpdate = true;
+                smokeParticles.visible = true;
+                smokeParticles.position.copy(car.position);
+            } else {
+                smokeParticles.visible = false;
+            }
+        }
+
+        function setupAudio() {
+            // 引擎声
+            const engineSound = new Howl({
+                src: ['https://assets.mixkit.co/sfx/preview/mixkit-car-engine-571.mp3'],
+                loop: true,
+                volume: 0.5
+            });
+            engineSound.play();
+
+            // 漂移声
+            let driftSound = null;
+            setInterval(() => {
+                if(isDrifting && !driftSound) {
+                    driftSound = new Howl({
+                        src: ['https://assets.mixkit.co/sfx/preview/mixkit-car-drift-571.mp3'],
+                        loop: true
+                    });
+                    driftSound.play();
+                } else if(!isDrifting && driftSound) {
+                    driftSound.stop();
+                    driftSound = null;
+                }
+            }, 100);
+        }
+
+        function checkCollision() {
+            const boundary = 18;
+            if(car.position.x < -boundary || car.position.x > boundary) {
+                moveSpeed *= -0.3;
+                car.position.x = THREE.MathUtils.clamp(car.position.x, -boundary, boundary);
+            }
+        }
+
+        function updateNitro() {
+            if(isDrifting && nitro > 0) {
+                nitro = Math.max(nitro - CONFIG.nitro.consumption, 0);
+                moveSpeed *= 1.05;
+            } else {
+                nitro = Math.min(nitro + CONFIG.nitro.recharge, CONFIG.nitro.capacity);
+            }
+            document.getElementById('nitroFill').style.transform = `scaleX(${nitro/100})`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 物理更新
+            car.position.x += Math.sin(car.rotation.y) * moveSpeed;
+            car.position.z += Math.cos(car.rotation.y) * moveSpeed;
+
+            // 转向处理
+            if(isDrifting) {
+                car.rotation.y += steering * CONFIG.car.driftFactor;
+                moveSpeed *= 0.97;
+            } else {
+                car.rotation.y += steering;
+            }
+
+            // 系统更新
+            updateParticles();
+            checkCollision();
+            updateNitro();
+
+            // 摄像机跟随
+            camera.position.set(
+                car.position.x - Math.sin(car.rotation.y) * 10,
+                5,
+                car.position.z - Math.cos(car.rotation.y) * 10
+            );
+            camera.lookAt(car.position);
+
+            // 更新UI
+            document.getElementById('speed').textContent = Math.abs(Math.round(moveSpeed * 60));
+            renderer.render(scene, camera);
+        }
+
+        // 启动游戏
+        init();
+
+        // 窗口调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

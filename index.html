@@ -3,183 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的博客</title>
+    <title>DeepGame | 深度游戏导航平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            line-height: 1.6;
+        :root {
+            --space-gradient: linear-gradient(135deg, #000428 0%, #004e92 100%);
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00ff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --deep-blue: #1A237E;
+            --cyber-aqua: #00B4DB;
+        }
+
+        /* 基础样式 */
+        * {
             margin: 0;
             padding: 0;
-            color: #333;
-            background-color: #f9f9f9;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui;
         }
 
-        .container {
-            width: 80%;
-            margin: 0 auto;
-            padding: 20px 0;
+        body {
+            background: var(--space-gradient);
+            color: white;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        header {
-            background-color: #fff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            padding: 15px 0;
+        /* 动态星空背景 */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 200vw;
+            height: 200vh;
+            background: 
+                radial-gradient(circle at 10% 20%, var(--neon-cyan) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, var(--neon-pink) 0%, transparent 50%);
+            animation: spaceMove 20s linear infinite;
+            z-index: -1;
         }
 
-        nav {
+        @keyframes spaceMove {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-50%, -50%); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* 导航栏样式 */
+        .navbar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            padding: 1rem 5%;
+            backdrop-filter: blur(15px);
+            background: var(--glass-bg);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .logo {
-            font-size: 24px;
-            font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 243, 255, 0.5);
         }
 
-        .nav-links {
-            display: flex;
-            list-style: none;
+        /* 轮播图样式 */
+        .carousel {
+            height: 60vh;
+            margin: 2rem 5%;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
         }
 
-        .nav-links li {
-            margin-left: 20px;
+        .carousel-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s;
+            padding: 3rem;
+            background-size: cover;
         }
 
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            transition: color 0.3s;
+        .carousel-slide.active {
+            opacity: 1;
         }
 
-        .nav-links a:hover {
-            color: #007bff;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 60px 0;
-            background-color: #fff;
-        }
-
-        .hero h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        .hero p {
-            font-size: 20px;
-            color: #666;
-            max-width: 700px;
-            margin: 0 auto 30px;
-        }
-
-        .btn {
-            display: inline-block;
-            background-color: #007bff;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            transition: background-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #0056b3;
-        }
-
-        .featured-post {
-            background-color: #fff;
-            padding: 30px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .posts {
+        /* 卡片系统 */
+        .card-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 2rem;
+            padding: 2rem 5%;
+            position: relative;
         }
 
-        .post {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .post h3 {
-            margin-top: 0;
+        .card:hover {
+            transform: translateY(-5px);
         }
 
-        footer {
-            text-align: center;
-            padding: 30px 0;
-            background-color: #333;
-            color: #fff;
-            margin-top: 40px;
+        /* 游戏卡片特殊样式 */
+        .game-card {
+            min-height: 400px;
+            perspective: 1000px;
+        }
+
+        .game-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-card:hover .game-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .game-card-front,
+        .game-card-back {
+            backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 1.5rem;
+        }
+
+        .game-card-back {
+            transform: rotateY(180deg);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .carousel {
+                height: 40vh;
+                margin: 1rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <nav>
-                <div class="logo">我的博客</div>
-                <ul class="nav-links">
-                    <li><a href="#home">首页</a></li>
-                    <li><a href="#about">关于</a></li>
-                    <li><a href="#contact">联系</a></li>
-                </ul>
-            </nav>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="logo">DeepGame</div>
+        <div class="nav-menu">
+            <a class="nav-link">导航服务</a>
+            <a class="nav-link">游戏中心</a>
+            <a class="nav-link">社区论坛</a>
         </div>
-    </header>
+        <div class="search-box">
+            <input type="text" placeholder="搜索游戏或资源...">
+            <i class="fas fa-search"></i>
+        </div>
+    </nav>
 
-    <section class="hero">
-        <div class="container">
-            <h1>欢迎来到我的博客</h1>
-            <p>在这里，我将分享我的思考、经验和学习心得，希望对你有所帮助。</p>
-            <a href="#posts" class="btn">阅读最新文章</a>
+    <!-- 轮播图 -->
+    <div class="carousel">
+        <div class="carousel-slide active" style="background: linear-gradient(90deg, var(--deep-blue) 0%, var(--cyber-aqua) 100%)">
+            <div class="slide-content">
+                <h2>发现最新游戏</h2>
+                <button class="neon-btn">立即探索</button>
+            </div>
         </div>
-    </section>
+        <div class="carousel-slide" style="background: linear-gradient(90deg, var(--neon-pink) 0%, var(--neon-cyan) 100%)">
+            <div class="slide-content">
+                <h2>热门在线游戏</h2>
+                <button class="neon-btn">加入游戏</button>
+            </div>
+        </div>
+    </div>
 
-    <section id="posts" class="container">
-        <div class="featured-post">
-            <h2>特色文章</h2>
-            <h3>如何学习编程</h3>
-            <p>学习编程可能会让人感到有些挑战，但通过正确的方法和坚持不懈的努力，任何人都可以掌握它。在这篇文章中，我将分享一些我在学习编程过程中总结出的有效方法和技巧。</p>
-            <a href="article.html?id=1" class="btn">阅读全文</a>
+    <!-- 卡片容器 -->
+    <div class="card-grid">
+        <!-- 学习资源卡片 -->
+        <div class="card learning-card">
+            <div class="card-header">
+                <i class="fas fa-graduation-cap"></i>
+                <h3>学习资源导航</h3>
+            </div>
+            <ul class="resource-list">
+                <li><a href="#"><img src="icons/wiki.png" alt=""> 维基百科</a></li>
+                <li><a href="#"><img src="icons/coursera.png" alt=""> Coursera</a></li>
+                <li><a href="#"><img src="icons/github.png" alt=""> GitHub</a></li>
+            </ul>
         </div>
 
-        <div class="posts" id="posts-list">
-            <!-- 文章列表将通过JavaScript动态加载 -->
+        <!-- 3D游戏卡片 -->
+        <div class="card game-card">
+            <div class="game-card-inner">
+                <div class="game-card-front" style="background-image: url('games/cyberpunk.jpg')">
+                    <div class="game-rating">★★★★☆ 4.5</div>
+                </div>
+                <div class="game-card-back">
+                    <h3>赛博纪元2077</h3>
+                    <p>开放世界角色扮演游戏</p>
+                    <div class="game-meta">
+                        <span>角色扮演</span>
+                        <span>单人/多人</span>
+                        <span>18+</span>
+                    </div>
+                    <button class="neon-btn">立即开玩</button>
+                </div>
+            </div>
         </div>
-    </section>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2023 我的博客. 保留所有权利.</p>
+        <!-- 工具卡片 -->
+        <div class="card tool-card">
+            <div class="tool-icon">
+                <i class="fas fa-calculator"></i>
+                <div class="hot-label">HOT</div>
+            </div>
+            <div class="tool-info">
+                <h3>全能计算器</h3>
+                <p>支持科学计算与单位换算</p>
+                <div class="shortcut-keys">
+                    <kbd>Ctrl</kbd> + <kbd>Q</kbd>
+                </div>
+            </div>
+            <div class="tool-footer">
+                <span>今日使用 1.2k 次</span>
+                <button class="neon-btn">启动</button>
+            </div>
         </div>
-    </footer>
+
+        <!-- 活动卡片 -->
+        <div class="card event-card">
+            <div class="event-header">
+                <h3>夏日游戏节</h3>
+                <div class="countdown">剩余3天</div>
+            </div>
+            <div class="prize-pool">
+                <i class="fas fa-gem"></i>
+                ¥15,000 奖池
+            </div>
+            <div class="participants">
+                <div class="user-avatars">
+                    <img src="users/avatar1.jpg" alt="">
+                    <img src="users/avatar2.jpg" alt="">
+                    <img src="users/avatar3.jpg" alt="">
+                    +128人参加
+                </div>
+            </div>
+            <button class="neon-btn">立即报名</button>
+        </div>
+    </div>
+
+    <!-- 粒子背景画布 -->
+    <canvas id="particle-canvas"></canvas>
 
     <script>
-        fetch('articles.json')
-            .then(response => response.json())
-            .then(articles => {
-                const postsList = document.getElementById('posts-list');
-                articles.forEach(article => {
-                    const postElement = document.createElement('div');
-                    postElement.className = 'post';
-                    postElement.innerHTML = `
-                        <h3>${article.title}</h3>
-                        <p>${article.content}</p>
-                        <a href="article.html?id=${article.id}" class="btn">阅读全文</a>
-                    `;
-                    postsList.appendChild(postElement);
-                });
-            })
-            .catch(error => console.error('Error loading the articles:', error));
+        // 轮播图逻辑
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.carousel-slide');
+        setInterval(() => {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }, 5000);
+
+        // 粒子系统
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                if (this.x > canvas.width + 50) this.reset();
+                if (this.x < -50) this.reset();
+                if (this.y > canvas.height + 50) this.reset();
+                if (this.y < -50) this.reset();
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(0, 243, 255, ${this.size/3})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const particles = Array(100).fill().map(() => new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // 窗口大小调整监听
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
     </script>
 </body>
 </html>
