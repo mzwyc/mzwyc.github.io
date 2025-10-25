@@ -1,0 +1,40 @@
+---
+layout: default
+title: Home
+---
+
+<div class="home">
+  {%- if page.title -%}
+    <h1 class="page-heading">{{ page.title }}</h1>
+  {%- endif -%}
+
+  {{ content }}
+
+  <section class="hero">
+    <h2>Welcome to My Blog</h2>
+    <p>Thoughts, stories, and ideas about web development and design.</p>
+  </section>
+
+  <section class="latest-posts">
+    <h3>Latest Posts</h3>
+    
+    <ul class="post-list">
+      {%- for post in site.posts limit:5 -%}
+      <li>
+        {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
+        <span class="post-meta">{{ post.date | date: date_format }}</span>
+        <h3>
+          <a class="post-link" href="{{ post.url | relative_url }}">
+            {{ post.title | escape }}
+          </a>
+        </h3>
+        {%- if site.show_excerpts -%}
+          {{ post.excerpt }}
+        {%- endif -%}
+      </li>
+      {%- endfor -%}
+    </ul>
+
+    <p class="rss-subscribe">subscribe <a href="{{ "/feed.xml" | relative_url }}">via RSS</a></p>
+  </section>
+</div>
